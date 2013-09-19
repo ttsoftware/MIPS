@@ -127,7 +127,7 @@ stack_control:
 terminate:
 	nop # vector now contains the sorted array.
 
-#end of quicksort, beginning of print.
+# end of quicksort, beginning of print.
 
 callPrint:
 	la $a0, vector
