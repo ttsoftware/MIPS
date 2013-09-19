@@ -1,9 +1,9 @@
 .data
 #vector: .word 1, 4, 1, 3, 2
 #vector: .word 56, 54, 32, 78, 59, 32, 16 1, 77, -17
-#vector: .word 3, 2, 4, 1, 7
+vector: .word 3, 2, 4, 1, 7
 #vector: .word 1, 2, 3, 4, 5
-vector: .word 5, 4, 3, 2, 1
+#vector: .word 5, 4, 3, 2, 1
 
 .text
 # register overview:
@@ -13,10 +13,26 @@ vector: .word 5, 4, 3, 2, 1
 	# s1 = last
 	# ra = return address stored by jal
 
+# instruction overview
+	# add = used for finding the pivot value
+	# addi = used for incrementing i, left and right
+	# bge = used for the loop condition
+	# bgt = used for the if control statement inside the loop
+	# div = used for deciding the pivot value
+	# jal = used for jumping to a label recursively (returning afterwards)
+	# jr = used for jumping to return address set by the previous qsort call.
+	# j = used for jumping to terminate.
+	# lw = used for loading values from the array
+	# move = used for assigning register values
+	# mul = used for finding the correct address
+	# nop = used for terminating the program
+	# subi = used for finding the correct stack pointer address, and subsequent return address.
+	# sw = used for storing values in the array, and the stack pointer
+
 main: 
 	addi $a1, $0, 0 # $a1 = left
 	addi $a2, $0, 4 # $a2 = right
-	jal qsort
+	j qsort
 	
 qsort:
 	# add $ra to the stack pointer, in order to be able to reuse it 
@@ -39,13 +55,13 @@ qsort:
 	move $s1, $a1 # last = left	$s1 = last
 	mul $a3, $a1, 4 # i = left	$a3 = i
 	
-	jal loop
+	j loop
 	
 loop:
 	addi $a3, $a3, 4 # increment i so we take left+1 into account
 	mul $t0, $a2, 4 # multiply right by 4, to get the correct size relative to i
 	
-	# loop condition	
+	# loop condition	i <= right
 	bge $t0, $a3, loop_body
 	
 	mul $t2, $a1, 4 # multiply left to get byte address
@@ -57,16 +73,16 @@ loop:
 	sw $t1, vector($t2) # v[left] = v[last]
 	sw $t0, vector($t3) # v[last] = tmp
 
-	# save temp variables before double loop
+	# save temp variable before the two loops
 	move $t1, $a2 # $t2 = right
 
 	addi $a2, $s1, -1 # right = last - 1
-	jal qsort
+	jal qsort # right-side recursive call
 	
-	move $a2, $t1 # restore value before recursive call above
+	move $a2, $t1 # restore value from temp before recursive call
 	
 	addi $a1, $s1, 1 # left = last + 1
-	jal qsort
+	jal qsort # left-side recursive call
 		
 	j terminate
 	
@@ -85,7 +101,7 @@ loop_body:
 	
 	sw $t0, vector($t3) # v[last] = v[i]
 	sw $t1, vector($a3) # v[i] = v[last]
-	jal loop
+	j loop # start next loop iteration
 	
 stack_control:
 	# use the return address previously stored in the stack pointer, to return to the correct address.
