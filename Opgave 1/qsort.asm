@@ -1,31 +1,40 @@
 .data
 #vector: .word 1, 4, 1, 3, 2
-vector: .word 56, 54, 32, 78, 59, 32, 16 1, 77, -17
+#vector: .word 56, 54, 32, 78, 59, 32, 16 1, 77, -17
 #vector: .word 3, 2, 4, 1, 7
 #vector: .word 1, 2, 3, 4, 5
-#vector: .word 5, 4, 3, 2, 1
+vector: .word 5, 4, 3, 2, 1
+
 .text
+# register overview:
+	# a1 = left (start index of array)
+	# a2 = right (length of array -1)
+	# a3 = i (only semi global, as it is reset in every loop) 
+	# s1 = last
+	# ra = return address stored by jal
 
 main: 
 	addi $a1, $0, 0 # $a1 = left
-	addi $a2, $0, 9 # $a2 = right
+	addi $a2, $0, 4 # $a2 = right
 	jal qsort
 	
 qsort:
-	sw $ra, ($sp)
-	subi $sp, $sp, 4
+	# add $ra to the stack pointer, in order to be able to reuse it 
+	sw $ra, ($sp) 
+	subi $sp, $sp, 4 
 	
 	bge $a1, $a2, stack_control # left >= right
 	
-	mul $t2, $a1, 4 # align adress
+	mul $t0, $a1, 4 # align adress
 	
-	lw $t0, vector($t2) # tmp = v[left]	$t0 = tmp
-	add $s0, $a1, $a2 # $s0 = (left + right)
-	div $s0, $s0, 2 # $s0 = (left + right) / 2
-	mul $s0, $s0, 4 # get correct address by multiplying with 4
-	lw $t1, vector($s0) # $s0 = vector((left + right) / 2) 
-	sw $t1, vector($t2) # vector(left) = vector((left + right) / 2)
-	sw $t0, vector($s0) # vector((left + right) / 2) = tmp
+	lw $t1, vector($t0) # tmp = v[left]	$t0 = tmp
+	add $t2, $a1, $a2 # $s0 = (left + right)
+	div $t2, $t2, 2 # $s0 = (left + right) / 2
+	mul $t2, $t2, 4 # get correct address by multiplying with 4
+	
+	lw $t3, vector($t2) # $t1 = vector((left + right) / 2) 
+	sw $t3, vector($t0) # vector(left) = vector((left + right) / 2)
+	sw $t1, vector($t2) # vector((left + right) / 2) = tmp
 	
 	move $s1, $a1 # last = left	$s1 = last
 	mul $a3, $a1, 4 # i = left	$a3 = i
@@ -79,10 +88,10 @@ loop_body:
 	jal loop
 	
 stack_control:
+	# use the return address previously stored in the stack pointer, to return to the correct address.
 	addi $sp, $sp 4
 	lw $ra, ($sp)
 	jr $ra
 	
 terminate:
-	# skid mig i munden Knud
-	nop
+	nop # vector now contains the sorted array.
